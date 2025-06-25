@@ -33,7 +33,14 @@ app.use((req, res, next) => {
   console.log(logEntry);
   next();
 });
-
+app.get('/my-ip', async (req, res) => {
+  try {
+    const ip = await axios.get('https://ipinfo.io/ip');
+    res.send(`Outbound IP is: ${ip.data}`);
+  } catch (err) {
+    res.status(500).send('Error getting IP');
+  }
+});
 //Log JSON responses
 app.use((req, res, next) => {
   const oldJson = res.json;
