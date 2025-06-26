@@ -9,7 +9,7 @@ const PaymentModel = require('./paymentModel'); // adjust the path if needed
 const PAYMENT_TYPES = [
   'Hindi-Junior', 'Hindi-Pre_Junior',
   'Gujarati-Junior', 'Gujarati-Pre_Junior',
-  'Panjabi-Junior', 'Panjabi-Pre_junior'
+  'Panjabi-Junior', 'Panjabi-Pre_Junior'
 ];
 const PAYMENT_AMOUNT_PENCE = 4500; // £85 in pence   
 
