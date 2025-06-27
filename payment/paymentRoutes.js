@@ -18,15 +18,18 @@ const PAYMENT_TYPES = [
 const PAYMENT_AMOUNT_PENCE = 4500; // £45 in pence
 
 router.post('/create-payment-intent', async (req, res) => {
-  const { language, level, currency = 'gbp' } = req.body;
+  const { language, level, currency = 'gbp', user_id } = req.body;
 
   // Validate language and level
-  if (!language || !level) {
-    return res.status(400).json({ message: 'language and level are required' });
+  if (!language || !level || !user_id) {
+    return res.status(400).json({ message: 'user_id, language and level are required' });
   }
 
+  const courseType = `${language}-${level}`;
+  const amount = PAYMENT_AMOUNT_PENCE;
+
   // Validate payment type
-  if (!PAYMENT_TYPES.includes(type?.trim())) {
+  if (!PAYMENT_TYPES.includes(courseType)) {
     return res.status(400).json({
       message: 'Invalid payment type',
       allowedTypes: PAYMENT_TYPES,
@@ -34,37 +37,37 @@ router.post('/create-payment-intent', async (req, res) => {
   }
 
   try {
-    // 1. Create Stripe Payment Intent
+    // 1. Create Stripe Payment Intent with metadata
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: PAYMENT_AMOUNT_PENCE,
+      amount,
       currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
-        courseType: type,
+        user_id: String(user_id),
+        language,
+        level,
+        courseType
       },
     });
 
     // 2. Save payment intent to DB
     await PaymentModel.save({
       stripe_session_id: paymentIntent.id,
-      amount: PAYMENT_AMOUNT_PENCE,
+      amount,
       currency,
-      course_type: `${language}-${level}`,
+      course_type: courseType,
       status: 'pending',
     });
 
-    // 3. Mark this language+level as paid for user
-    const user_id = req.user?.users_id; // Use users_id from your users table
-    if (user_id) {
-      await PaidVideoModel.markPaid(user_id, language, level);
-    }
+    // 3. (Optional) Mark this language+level as paid for user immediately (usually done in webhook)
+    // await PaidVideoModel.markPaid(user_id, language, level);
 
     // 4. Return client secret
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
-      amount: PAYMENT_AMOUNT_PENCE,
+      amount,
       currency,
-      type,
+      courseType,
     });
 
   } catch (error) {
