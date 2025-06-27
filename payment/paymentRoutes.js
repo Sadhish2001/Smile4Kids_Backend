@@ -50,6 +50,8 @@ router.post('/create-payment-intent', async (req, res) => {
       },
     });
 
+    console.log('Webhook metadata:', paymentIntent.metadata);
+
     // 2. Save payment intent to DB
     await PaymentModel.save({
       stripe_session_id: paymentIntent.id,
