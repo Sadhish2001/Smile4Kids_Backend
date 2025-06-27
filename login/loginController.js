@@ -23,7 +23,9 @@ class LoginController {
           users_id: user.users_id,
           username: user.username,
           email_id: user.email_id,
-          avatar: user.avatar
+          avatar: user.avatar,
+          level: user.level,
+          language: user.language
         },
         process.env.JWT_SECRET
       );
@@ -35,6 +37,8 @@ class LoginController {
           username: user.username,
           email_id: user.email_id,
           avatar: user.avatar,
+          level: user.level,
+          language: user.language,
           paid_categories: paidVideos // [{language, level}, ...]
         }
       });
