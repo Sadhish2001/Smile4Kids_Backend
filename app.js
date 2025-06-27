@@ -6,9 +6,9 @@ const fs = require('fs');
 const axios = require('axios');
 const app = express();
 
-// //Webhook route must be BEFORE express.json()
-// const webhookRoutes = require('./payment/webhookRoutes');
-// app.use('/webhook', webhookRoutes);
+//Webhook route must be BEFORE express.json()
+const webhookRoutes = require('./payment/webhookRoutes');
+app.use('/webhook', webhookRoutes);
 
 //Body parsers (after webhook)
 app.use(cors());

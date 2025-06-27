@@ -1,53 +1,69 @@
-// const express = require('express');
-// const router = express.Router();
-// const Stripe = require('stripe');
-// const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-// const PaymentModel = require('./paymentModel');
+const express = require('express');
+const router = express.Router();
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const PaymentModel = require('./paymentModel');
+const PaidVideoModel = require('./paidVideoModel'); // <-- Add this
 
-// const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
-//   console.log("Webhook hit!");
+router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
+  console.log("Webhook hit!");
 
-//   const sig = req.headers['stripe-signature'];
-//   let event;
+  const sig = req.headers['stripe-signature'];
+  let event;
 
-//   try {
-//     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-//   } catch (err) {
-//     console.error("Webhook signature error:", err.message);
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.error("Webhook signature error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-//   if (event.type === 'payment_intent.succeeded') {
-//     const paymentIntent = event.data.object;
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
 
-//     console.log("Payment Intent ID:", paymentIntent.id);
-//     console.log("Will save to DB:", {
-//       stripe_session_id: paymentIntent.id,
-//       amount: paymentIntent.amount,
-//       currency: paymentIntent.currency,
-//       course_type: paymentIntent.metadata.courseType,
-//       status: paymentIntent.status,
-//     });
+    console.log("Payment Intent ID:", paymentIntent.id);
+    console.log("Will save to DB:", {
+      stripe_session_id: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      course_type: paymentIntent.metadata.courseType,
+      status: paymentIntent.status,
+    });
 
-//     try {
-//       await PaymentModel.save({
-//         stripe_session_id: paymentIntent.id,
-//         amount: paymentIntent.amount,
-//         currency: paymentIntent.currency,
-//         course_type: paymentIntent.metadata.courseType || null,
-//         status: paymentIntent.status
-//       });
-//       console.log('Saved to DB');
-//     } catch (saveErr) {
-//       console.error('Failed to save payment to DB:', saveErr);
-//     }
-//   }
+    try {
+      await PaymentModel.save({
+        stripe_session_id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        course_type: paymentIntent.metadata.courseType || null,
+        status: paymentIntent.status
+      });
+      console.log('Saved to DB');
+    } catch (saveErr) {
+      console.error('Failed to save payment to DB:', saveErr);
+    }
 
-//   res.status(200).json({ received: true });
-// });
+    // --- NEW: Mark user_paid_videos ---
+    const user_id = paymentIntent.metadata?.user_id;
+    const language = paymentIntent.metadata?.language;
+    const level = paymentIntent.metadata?.level;
 
-// module.exports = router;   
+    if (user_id && language && level) {
+      try {
+        await PaidVideoModel.markPaid(user_id, language, level);
+        console.log(`Marked paid: user ${user_id}, ${language}-${level}`);
+      } catch (err) {
+        console.error('Failed to mark paid in user_paid_videos:', err);
+      }
+    } else {
+      console.warn('Missing metadata for user_paid_videos:', { user_id, language, level });
+    }
+    // --- END NEW ---
+  }
 
-// sadhish
+  res.status(200).json({ received: true });
+});
+
+module.exports = router;
