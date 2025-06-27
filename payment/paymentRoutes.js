@@ -81,4 +81,15 @@ router.post('/create-payment-intent', async (req, res) => {
   }
 });
 
+// Add this route to your paymentRoutes.js or another route file
+router.get('/paid-videos/:user_id', async (req, res) => {
+  const user_id = req.params.user_id;
+  try {
+    const paidVideos = await require('./paidVideoModel').getPaidVideos(user_id);
+    res.json(paidVideos);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching paid videos', error: err.message });
+  }
+});
+
 module.exports = router;
