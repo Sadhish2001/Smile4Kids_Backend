@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const VideoModel = require('./videoModel');
+const PaidVideoModel = require('../payment/paidVideoModel'); // Add this
 const authenticate = require('../authMiddleware');
 
 const router = express.Router();
@@ -129,6 +130,38 @@ router.get('/by-category', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+router.get('/user-list', authenticate, async (req, res) => {
+  try {
+    const user_id = req.user?.users_id;
+    if (!user_id) return res.status(401).json({ message: 'Unauthorized' });
+
+    const paid = await PaidVideoModel.getPaidVideos(user_id);
+    const paidSet = new Set(paid.map(p => `${p.language}-${p.level}`));
+    const videos = await VideoModel.getAll();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const result = videos.map(video => {
+      const key = `${video.language}-${video.level}`;
+      return {
+        _id: video.id,
+        title: video.title || video.filename,
+        videoUrl: `${baseUrl}/${video.path.replace(/\\/g, '/')}`,
+        thumbnailUrl: video.thumbnailUrl
+          ? (video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `${baseUrl}/${video.thumbnailUrl.replace(/\\/g, '/')}`)
+          : null,
+        description: video.description || '',
+        paid: paidSet.has(key),
+        language: video.language,
+        level: video.level
+      };
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching user video list', error: err.message });
   }
 });
 

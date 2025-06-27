@@ -1,5 +1,6 @@
 const LoginModel = require('./loginModels');
 const jwt = require('jsonwebtoken');
+const PaidVideoModel = require('../payment/paidVideoModel'); // Add this at the top
 
 class LoginController {
   async login(req, res) {
@@ -13,6 +14,10 @@ class LoginController {
       if (!user || user.password !== password) {
         return res.status(401).json({ message: 'Invalid email or password' });
       }
+
+      // Fetch paid language/level for this user
+      const paidVideos = await PaidVideoModel.getPaidVideos(user.users_id);
+
       const token = jwt.sign(
         {
           users_id: user.users_id,
@@ -29,9 +34,8 @@ class LoginController {
           users_id: user.users_id,
           username: user.username,
           email_id: user.email_id,
-          language: user.language,
-          age: user.age,
-          avatar: user.avatar
+          avatar: user.avatar,
+          paid_categories: paidVideos // [{language, level}, ...]
         }
       });
     } catch (err) {

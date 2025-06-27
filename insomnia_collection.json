@@ -173,7 +173,29 @@
       "method": "GET",
       "url": "http://localhost:3000/api/images",
       "_type": "request"
+    },
+    {
+      "_id": "req_create_payment_intent",
+      "parentId": "wrk_smil4kids",
+      "name": "Create Payment Intent",
+      "method": "POST",
+      "url": "http://localhost:3000/payment/create-payment-intent",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\"language\": \"Gujarati\", \"level\": \"Junior\"}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_video_user_list",
+      "parentId": "wrk_smil4kids",
+      "name": "Get User Video List",
+      "method": "GET",
+      "url": "http://localhost:3000/videos/user-list",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {your_token_here}" }
+      ],
+      "_type": "request"
     }
   ]
 }
- 
