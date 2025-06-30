@@ -70,6 +70,7 @@ router.post('/create-payment-intent', async (req, res) => {
       amount,
       currency,
       courseType,
+      status: paymentIntent.status,
     });
 
   } catch (error) {
