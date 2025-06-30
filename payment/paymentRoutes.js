@@ -4,6 +4,8 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY); // Load from env
 const PaymentModel = require('./paymentModel'); // Make sure this exists
 const PaidVideoModel = require('./paidVideoModel'); // Add this
+const authMiddleware = require('../authMiddleware');
+
 
 // ✅ Allowed payment types - ensure casing matches frontend
 const PAYMENT_TYPES = [

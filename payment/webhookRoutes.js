@@ -3,7 +3,9 @@ const router = express.Router();
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const PaymentModel = require('./paymentModel');
-const PaidVideoModel = require('./paidVideoModel'); // <-- Add this
+const PaidVideoModel = require('./paidVideoModel'); 
+const authMiddleware = require('../authMiddleware');
+
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

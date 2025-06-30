@@ -3,6 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const ImageModel = require('./imageModel');
 const router = express.Router();
+const authMiddleware = require('../authMiddleware');
+
 
 // Set up storage for Multer
 const storage = multer.diskStorage({
