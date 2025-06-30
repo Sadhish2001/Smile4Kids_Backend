@@ -50,7 +50,9 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     const user_id = paymentIntent.metadata?.user_id;
     const language = paymentIntent.metadata?.language;
     const level = paymentIntent.metadata?.level;
-
+    console.log('user_id:', user_id);
+    console.log('language:', language);
+    console.log('level:', level);
     if (user_id && language && level) {
       try {
         await PaidVideoModel.markPaid(user_id, language, level);
