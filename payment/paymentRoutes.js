@@ -17,7 +17,7 @@ const PAYMENT_TYPES = [
   'Panjabi-Pre_Junior',
 ];
 // £45 in pence
-const PAYMENT_AMOUNT_PENCE = 4500; // £45 in pence
+const PAYMENT_AMOUNT_PENCE = 45; // £45 in pence
 
 router.post('/create-payment-intent', async (req, res) => {
   const { selections, currency = 'gbp', user_id } = req.body;
