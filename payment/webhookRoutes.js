@@ -25,6 +25,28 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
+    const user_id = paymentIntent.metadata?.user_id;
+    let selections = [];
+    try {
+      selections = JSON.parse(paymentIntent.metadata?.selections || '[]');
+    } catch (e) {
+      selections = [];
+    }
+
+    if (user_id && Array.isArray(selections)) {
+      for (const sel of selections) {
+        if (sel.language && sel.level) {
+          try {
+            await PaidVideoModel.markPaid(user_id, sel.language, sel.level);
+            console.log(`Marked paid: user ${user_id}, ${sel.language}-${sel.level}`);
+          } catch (err) {
+            console.error('Failed to mark paid in user_paid_videos:', err);
+          }
+        }
+      }
+    } else {
+      console.warn('Missing metadata for user_paid_videos:', { user_id, selections });
+    }
 
     console.log("Payment Intent ID:", paymentIntent.id);
     console.log("Will save to DB:", {
@@ -47,25 +69,6 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     } catch (saveErr) {
       console.error('Failed to save payment to DB:', saveErr);
     }
-
-    // --- NEW: Mark user_paid_videos ---
-    const user_id = paymentIntent.metadata?.user_id;
-    const language = paymentIntent.metadata?.language;
-    const level = paymentIntent.metadata?.level;
-    console.log('user_id:', user_id);
-    console.log('language:', language);
-    console.log('level:', level);
-    if (user_id && language && level) {
-      try {
-        await PaidVideoModel.markPaid(user_id, language, level);
-        console.log(`Marked paid: user ${user_id}, ${language}-${level}`);
-      } catch (err) {
-        console.error('Failed to mark paid in user_paid_videos:', err);
-      }
-    } else {
-      console.warn('Missing metadata for user_paid_videos:', { user_id, language, level });
-    }
-    // --- END NEW ---
   }
 
   res.status(200).json({ received: true });

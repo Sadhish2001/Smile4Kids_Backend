@@ -20,58 +20,51 @@ const PAYMENT_TYPES = [
 const PAYMENT_AMOUNT_PENCE = 4500; // £45 in pence
 
 router.post('/create-payment-intent', async (req, res) => {
-  const { language, level, currency = 'gbp', user_id } = req.body;
+  const { selections, currency = 'gbp', user_id } = req.body;
+  // selections: [{ language: 'Gujarati', level: 'Junior' }, ...]
 
-  // Validate language and level
-  if (!language || !level || !user_id) {
-    return res.status(400).json({ message: 'user_id, language and level are required' });
+  if (!Array.isArray(selections) || selections.length === 0 || !user_id) {
+    return res.status(400).json({ message: 'user_id and selections (array) are required' });
   }
 
-  const courseType = `${language}-${level}`;
-  const amount = PAYMENT_AMOUNT_PENCE;
-
-  // Validate payment type
-  if (!PAYMENT_TYPES.includes(courseType)) {
-    return res.status(400).json({
-      message: 'Invalid payment type',
-      allowedTypes: PAYMENT_TYPES,
-    });
+  // Validate all selections
+  for (const sel of selections) {
+    const courseType = `${sel.language}-${sel.level}`;
+    if (!PAYMENT_TYPES.includes(courseType)) {
+      return res.status(400).json({
+        message: `Invalid payment type: ${courseType}`,
+        allowedTypes: PAYMENT_TYPES,
+      });
+    }
   }
+
+  const amount = selections.length * PAYMENT_AMOUNT_PENCE;
 
   try {
-    // 1. Create Stripe Payment Intent with metadata
+    // Store selections as JSON in metadata
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
         user_id: String(user_id),
-        language,
-        level,
-        courseType
+        selections: JSON.stringify(selections)
       },
     });
 
-    console.log('Webhook metadata:', paymentIntent.metadata);
-
-    // 2. Save payment intent to DB
     await PaymentModel.save({
       stripe_session_id: paymentIntent.id,
       amount,
       currency,
-      course_type: courseType,
+      course_type: selections.map(sel => `${sel.language}-${sel.level}`).join(','),
       status: 'pending',
     });
 
-    // 3. (Optional) Mark this language+level as paid for user immediately (usually done in webhook)
-    // await PaidVideoModel.markPaid(user_id, language, level);
-
-    // 4. Return client secret
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
       amount,
       currency,
-      courseType,
+      selections,
       status: paymentIntent.status,
     });
 
@@ -84,11 +77,35 @@ router.post('/create-payment-intent', async (req, res) => {
   }
 });
 
-// Add this route to your paymentRoutes.js or another route file
-router.get('/paid-videos/:user_id', async (req, res) => {
-  const user_id = req.params.user_id;
+// Calculate total payment amount for selected courses
+router.post('/calculate-amount', (req, res) => {
+  const { selections } = req.body;
+  // selections: [{ language: 'Gujarati', level: 'Junior' }, ...]
+
+  if (!Array.isArray(selections) || selections.length === 0) {
+    return res.status(400).json({ message: 'selections (array) are required' });
+  }
+
+  // Validate all selections
+  for (const sel of selections) {
+    const courseType = `${sel.language}-${sel.level}`;
+    if (!PAYMENT_TYPES.includes(courseType)) {
+      return res.status(400).json({
+        message: `Invalid payment type: ${courseType}`,
+        allowedTypes: PAYMENT_TYPES,
+      });
+    }
+  }
+
+  const amount = selections.length * PAYMENT_AMOUNT_PENCE;
+  res.json({ amount, count: selections.length, currency: 'gbp' });
+});
+
+// Get all paid video categories for the authenticated user
+router.get('/my-paid-videos', authMiddleware, async (req, res) => {
   try {
-    const paidVideos = await require('./paidVideoModel').getPaidVideos(user_id);
+    const user_id = req.user.users_id; // user info from JWT
+    const paidVideos = await PaidVideoModel.getPaidVideos(user_id);
     res.json(paidVideos);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching paid videos', error: err.message });
