@@ -22,6 +22,7 @@ const forgotRoutes = require('./forgot/forgotRoutes');
 const uploadRoutes = require('./uploadvideo/uploadRoutes');
 const imageRoutes = require('./image/imageRoutes');
 const paymentRoutes = require('./payment/paymentRoutes');
+app.use('/payment', paymentRoutes);
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -86,7 +87,6 @@ app.get('/api/images', async (req, res) => {
   }
 });
 app.use('/api/images', imageRoutes);
-app.use('/payment', paymentRoutes);
 
 //Video streaming route
 app.get('/stream/:language/:level/:filename', (req, res) => {
