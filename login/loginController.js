@@ -25,7 +25,8 @@ class LoginController {
           email_id: user.email_id,
           avatar: user.avatar,
           level: user.level,
-          language: user.language
+          language: user.language,
+          is_admin: user.is_admin // Add this
         },
         process.env.JWT_SECRET
       );
@@ -39,6 +40,7 @@ class LoginController {
           avatar: user.avatar,
           level: user.level,
           language: user.language,
+          is_admin: user.is_admin, // Add this
           paid_categories: paidVideos // [{language, level}, ...]
         }
       });

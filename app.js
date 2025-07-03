@@ -22,7 +22,9 @@ const forgotRoutes = require('./forgot/forgotRoutes');
 const uploadRoutes = require('./uploadvideo/uploadRoutes');
 const imageRoutes = require('./image/imageRoutes');
 const paymentRoutes = require('./payment/paymentRoutes');
+const adminRoutes = require('./admin/adminRoutes');
 app.use('/payment', paymentRoutes);
+app.use('/admin', adminRoutes);
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
