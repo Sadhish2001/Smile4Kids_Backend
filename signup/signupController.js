@@ -34,7 +34,7 @@ try {
             await UserModel.updateProfile({ email_id, dob, ph_no, address, avatar });
             return res.json({ message: 'Profile updated successfully' });
         } catch (error) {
-            console.error("Update profile error:", error); // Add this
+            console.error("Update profile error:", error); 
             return res.status(500).json({
                 message: 'Error updating profile',
                 error: error.message || error.toString()
@@ -56,7 +56,7 @@ try {
             const { password, confirm_password, ...profile } = user;
             res.json(profile);
         } catch (error) {
-            console.error("Get profile error:", error); // Add this
+            console.error("Get profile error:", error); 
             res.status(500).json({
                 message: 'Error fetching profile',
                 error: error.message || error.toString()

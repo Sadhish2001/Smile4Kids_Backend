@@ -119,5 +119,3 @@ class ForgotController {
 }
 
 module.exports = new ForgotController();
-// This code defines a ForgotController class that handles the logic for sending OTPs, verifying them, and resetting passwords.
-// It uses the ForgotModel to interact with the database and nodemailer to send emails.

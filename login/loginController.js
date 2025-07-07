@@ -1,6 +1,6 @@
 const LoginModel = require('./loginModels');
 const jwt = require('jsonwebtoken');
-const PaidVideoModel = require('../payment/paidVideoModel'); // Add this at the top
+const PaidVideoModel = require('../payment/paidVideoModel');
 
 class LoginController {
   async login(req, res) {
@@ -26,7 +26,7 @@ class LoginController {
           avatar: user.avatar,
           level: user.level,
           language: user.language,
-          is_admin: user.is_admin // Add this
+          is_admin: user.is_admin 
         },
         process.env.JWT_SECRET
       );
@@ -40,8 +40,8 @@ class LoginController {
           avatar: user.avatar,
           level: user.level,
           language: user.language,
-          is_admin: user.is_admin, // Add this
-          paid_categories: paidVideos // [{language, level}, ...]
+          is_admin: user.is_admin, 
+          paid_categories: paidVideos // Include paid categories in the response
         }
       });
     } catch (err) {

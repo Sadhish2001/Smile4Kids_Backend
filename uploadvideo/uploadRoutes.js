@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const VideoModel = require('./videoModel');
-const PaidVideoModel = require('../payment/paidVideoModel'); // Add this
+const PaidVideoModel = require('../payment/paidVideoModel'); 
 const authenticate = require('../authMiddleware');
 
 const router = express.Router();
