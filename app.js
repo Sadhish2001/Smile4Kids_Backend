@@ -137,7 +137,7 @@ app.use((err, req, res, next) => {
 
 //this route to handle root URL
 app.get('/', (req, res) => {
-  res.send('Render server is active!');
+  res.send('Railway server is active!');
 });
 
 //Start server
