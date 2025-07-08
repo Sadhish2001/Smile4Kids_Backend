@@ -25,9 +25,21 @@ class ForgotController {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email_id,
-        subject: 'Your OTP Code',
-        text: `Your OTP code is: ${otp}`
+        subject: 'Password Reset OTP - Smile4Kids',
+        text: `Hello,
+
+We received a request to reset your password for your Smile4Kids account.
+
+Your One-Time Password (OTP) is: ${otp}
+
+Please enter this code in the app to proceed with resetting your password.
+
+If you did not request this, you can safely ignore this email.
+
+Thanks,  
+Smile4Kids Support Team`
       });
+
 
       res.json({ message: 'OTP sent to your email' });
     } catch (err) {
