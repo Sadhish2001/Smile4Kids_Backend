@@ -2,8 +2,9 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const mime = require('mime'); // for correct content-type
 const VideoModel = require('./videoModel');
-const PaidVideoModel = require('../payment/paidVideoModel'); 
+const PaidVideoModel = require('../payment/paidVideoModel');
 const authenticate = require('../authMiddleware');
 
 const router = express.Router();
@@ -12,7 +13,6 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath;
-
     if (file.fieldname === 'video') {
       uploadPath = path.join(__dirname, '../uploads/videos');
     } else if (file.fieldname === 'thumbnail') {
@@ -70,7 +70,7 @@ router.post(
       res.status(200).json({
         _id: videoId,
         title: title || videoFile.originalname,
-        videoUrl: `${baseUrl}/${videoPath.replace(/\\/g, '/')}`,
+        videoUrl: `${baseUrl}/videos/stream/${videoFile.filename}`,
         thumbnailUrl: thumbnailPath ? `${baseUrl}/${thumbnailPath.replace(/\\/g, '/')}` : null,
         description: description || ''
       });
@@ -92,7 +92,7 @@ router.get('/', async (req, res) => {
     const result = videos.map(video => ({
       _id: video.id,
       title: video.title || video.filename,
-      videoUrl: `${baseUrl}/${video.path.replace(/\\/g, '/')}`,
+      videoUrl: `${baseUrl}/videos/stream/${video.filename}`,
       thumbnailUrl: video.thumbnailUrl
         ? (video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `${baseUrl}/${video.thumbnailUrl.replace(/\\/g, '/')}`)
         : null,
@@ -116,23 +116,24 @@ router.get('/by-category', async (req, res) => {
   try {
     const videos = await VideoModel.getByCategory(language, level);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-
     const result = videos.map(video => ({
       _id: video.id,
       title: video.title || video.filename,
-      videoUrl: `${baseUrl}/${video.path.replace(/\\/g, '/')}`,
+      videoUrl: `${baseUrl}/videos/stream/${video.filename}`,
       thumbnailUrl: video.thumbnailUrl
         ? (video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `${baseUrl}/${video.thumbnailUrl.replace(/\\/g, '/')}`)
         : null,
       description: video.description || ''
     }));
-
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Database error', error: err.message });
   }
 });
 
+/**
+ * GET /videos/user-list (Protected)
+ */
 router.get('/user-list', authenticate, async (req, res) => {
   try {
     const user_id = req.user?.users_id;
@@ -148,7 +149,7 @@ router.get('/user-list', authenticate, async (req, res) => {
       return {
         _id: video.id,
         title: video.title || video.filename,
-        videoUrl: `${baseUrl}/${video.path.replace(/\\/g, '/')}`,
+        videoUrl: `${baseUrl}/videos/stream/${video.filename}`,
         thumbnailUrl: video.thumbnailUrl
           ? (video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `${baseUrl}/${video.thumbnailUrl.replace(/\\/g, '/')}`)
           : null,
@@ -162,6 +163,55 @@ router.get('/user-list', authenticate, async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching user video list', error: err.message });
+  }
+});
+
+/**
+ * GET /videos/stream/:filename (Protected & Streams Video Inline)
+ */
+router.get('/stream/:filename', authenticate, async (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(__dirname, '../uploads/videos', filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'Video not found' });
+  }
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+  const contentType = mime.getType(filePath) || 'video/mp4';
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', 'inline');
+
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize) {
+      res.status(416).send('Requested range not satisfiable');
+      return;
+    }
+
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(filePath, { start, end });
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize
+    });
+
+    file.pipe(res);
+  } else {
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Accept-Ranges': 'bytes'
+    });
+
+    fs.createReadStream(filePath).pipe(res);
   }
 });
 
