@@ -6,7 +6,7 @@ module.exports = async function authenticate(req, res, next) {
 
   // Check if Authorization header exists and starts with Bearer
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized: Authentication required' });
+    return res.status(401).json({ message: 'Unauthorized: No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
